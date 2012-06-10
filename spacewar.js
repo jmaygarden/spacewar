@@ -23,6 +23,43 @@ var SHIP_WIDTH = 10, SHIP_HEIGHT = 15;
 var TIMESTEP = 33;
 var MAX_VELOCITY = 50;
 
+function Explosion(size) {
+    this.size = size;
+}
+
+Explosion.prototype = {
+    position: [0, 0],
+
+    update: function (t, dt) {
+        if (null == this.startTime) {
+            this.startTime = t;
+        }
+        var elapsed = Math.min(500, t - this.startTime);
+        var factor = 0.48 * 4 * Math.PI;
+        this.scale = 1 + this.size * Math.tan(elapsed * factor);
+        if (isNaN(this.scale)) {
+            this.scale = 60000;
+        }
+    },
+
+    render: function (ctx) {
+        ctx.save();
+        ctx.translate(this.position[0], this.position[1]);
+        ctx.scale(this.scale, this.scale);
+        ctx.arc(0, 0, 15, 0, Math.PI * 2, false);
+        ctx.fillStyle = this.gradient;
+        ctx.fill();
+        ctx.restore();
+    },
+};
+
+function explosion_init(ctx) {
+    Explosion.prototype.gradient = ctx.createRadialGradient(0, 0, 0, 1, 0, 15);
+    Explosion.prototype.gradient.addColorStop(0.0, "rgba(190,105,90,1)");
+    Explosion.prototype.gradient.addColorStop(0.25, "rgba(5,30,80,0.4)");
+    Explosion.prototype.gradient.addColorStop(1, "rgba(10,0,40,0)");
+}
+
 function Ship(state, color, keys) {
     this.state = state;
     this.color = color;
@@ -87,9 +124,9 @@ Ship.prototype = {
             this.state.recalculate();
         }
 
-        Map.bind(this.state.position)
+        Map.worldWrap(this.state.position)
     },
-}
+};
 
 var Map = {
     ctx: null,
@@ -137,10 +174,16 @@ var Map = {
         state[1].orientation = Math.PI - state[0].orientation;
         state[1].recalculate();
 
+        explosion_init(this.ctx);
+
         this.ships = [
             new Ship(state[0], 'red', {left:65, thrust:83, right:68}),
             new Ship(state[1], 'blue', {left:100, thrust:101, right:102}),
             ];
+
+        this.explosion = new Explosion(100);
+        this.explosion.position[0] = 100;
+        this.explosion.position[1] = 100;
 
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height);
@@ -171,20 +214,22 @@ var Map = {
         this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.drawImage(img["planet"], this.planetOffset[0], this.planetOffset[1]);
 
+        this.explosion.render(this.ctx);
         for (var i = 0; i < this.ships.length; ++i)
             this.ships[i].render(this.ctx)
     },
     update: function(t, dt) {
+        this.explosion.update(t, dt);
         for (var i = 0; i < this.ships.length; ++i)
             this.ships[i].update(t, dt)
     },
-    bind: function(x) {
+    worldWrap: function(x) {
         while (x[0] > Map.width)     { x[0] -= Map.width; }
         while (x[0] < 0)             { x[0] += Map.width; }
         while (x[1] > Map.height)    { x[1] -= Map.height; }
         while (x[1] < 0)             { x[1] += Map.height; }
     },
-}
+};
 
 var img = load_images(
     {
