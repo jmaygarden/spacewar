@@ -133,6 +133,32 @@ PhysicsState.prototype = {
     }
 }
 
+function Set() {
+    this.list = [];
+}
+
+Set.prototype = {
+    add: function (obj) {
+        this.list.push(obj);
+    },
+
+    remove: function (obj) {
+        for (var i = 0; i < this.list.length; ++i) {
+            if (this.list[i] == obj) {
+                this.list.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    },
+
+    foreach: function (f) {
+        for (var i = 0; i < this.list.length; ++i) {
+            f(this.list[i], i, this)
+        }
+    },
+};
+
 function load_images(sources, onload) {
     var img = {}, i = 0, len = 0;
     for (var key in sources) {

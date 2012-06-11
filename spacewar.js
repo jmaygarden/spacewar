@@ -23,19 +23,23 @@ var SHIP_WIDTH = 10, SHIP_HEIGHT = 15;
 var TIMESTEP = 33;
 var MAX_VELOCITY = 50;
 
-function Explosion(size) {
+function Burst(set, size) {
+    this.set = set;
     this.size = size;
 }
 
-Explosion.prototype = {
+Burst.prototype = {
     position: [0, 0],
 
     update: function (t, dt) {
         if (null == this.startTime) {
             this.startTime = t;
         }
-        var elapsed = Math.min(500, t - this.startTime);
-        var factor = 0.48 * 4 * Math.PI;
+        var elapsed = Math.min(0.5, t - this.startTime);
+        if (elapsed == 0.5) {
+            this.set.remove(this);
+        }
+        var factor = 1.25 * 0.48 * Math.PI;
         this.scale = 1 + this.size * Math.tan(elapsed * factor);
         if (isNaN(this.scale)) {
             this.scale = 60000;
@@ -46,19 +50,69 @@ Explosion.prototype = {
         ctx.save();
         ctx.translate(this.position[0], this.position[1]);
         ctx.scale(this.scale, this.scale);
+        ctx.beginPath();
         ctx.arc(0, 0, 15, 0, Math.PI * 2, false);
         ctx.fillStyle = this.gradient;
+        ctx.globalCompositeOperation = "lighter";
         ctx.fill();
         ctx.restore();
     },
 };
 
 function explosion_init(ctx) {
-    Explosion.prototype.gradient = ctx.createRadialGradient(0, 0, 0, 1, 0, 15);
-    Explosion.prototype.gradient.addColorStop(0.0, "rgba(190,105,90,1)");
-    Explosion.prototype.gradient.addColorStop(0.25, "rgba(5,30,80,0.4)");
-    Explosion.prototype.gradient.addColorStop(1, "rgba(10,0,40,0)");
+    Burst.prototype.gradient = ctx.createRadialGradient(0, 0, 0, 1, 0, 15);
+    Burst.prototype.gradient.addColorStop(0.0, "rgba(190,105,90,1)");
+    Burst.prototype.gradient.addColorStop(0.25, "rgba(5,30,80,0.4)");
+    Burst.prototype.gradient.addColorStop(1, "rgba(10,0,40,0)");
 }
+
+function Explosion(position, size) {
+    this.position = position;
+    this.size = size;
+    this.set = new Set();
+
+    var burst = new Burst(this.set, this.size);
+    this.set.add(burst);
+}
+
+Explosion.prototype = {
+    addBurst: function () {
+        var burst = new Burst(this.set, (Math.random() * 0.4 + 0.6) * this.size);
+        var dx = Math.random();
+        dx *= dx;
+        dx *= (Math.random() < 0.5 ? -1 : 1);
+        burst.position[0] = dx * this.size;
+        dx = Math.random();
+        dx *= dx;
+        dx *= (Math.random() < 0.5 ? -1 : 1);
+        burst.position[1] = dx * this.size;
+        this.set.add(burst);
+    },
+
+    update: function (t, dt) {
+        if (null == this.startTime) {
+            this.startTime = t;
+        }
+        var elapsed = t - this.startTime;
+        if (elapsed > Math.random() + 0.05) {
+            this.startTime = t;
+            this.addBurst();
+        }
+
+        this.set.foreach(function(burst) {
+            burst.update(t, dt);
+        });
+    },
+
+    render: function (ctx) {
+        ctx.save();
+        ctx.translate(this.position[0], this.position[1]);
+        this.set.foreach(function(burst) {
+            burst.render(ctx);
+        });
+        ctx.restore();
+    },
+};
 
 function Ship(state, color, keys) {
     this.state = state;
@@ -181,9 +235,7 @@ var Map = {
             new Ship(state[1], 'blue', {left:100, thrust:101, right:102}),
             ];
 
-        this.explosion = new Explosion(100);
-        this.explosion.position[0] = 100;
-        this.explosion.position[1] = 100;
+        this.explosion = new Explosion([100, 100], 4);
 
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height);
@@ -200,6 +252,7 @@ var Map = {
             map.keystate[event.keyCode] = false;
         };
     },
+
     gravity: function(state) {
         var v = V2.sub(this.gravityCenter, state.position),
             d = V2.length(v),
@@ -210,19 +263,25 @@ var Map = {
         a = GRAVITY_INTENSITY / (d * d);
         return V2.scale(V2.normalize(v, v), a, v);
     },
-    render: function() {
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        this.ctx.drawImage(img["planet"], this.planetOffset[0], this.planetOffset[1]);
 
-        this.explosion.render(this.ctx);
+    render: function() {
+        var ctx = this.ctx;
+
+        ctx.fillRect(0, 0, this.width, this.height);
+        ctx.drawImage(img["planet"],
+                      this.planetOffset[0],
+                      this.planetOffset[1]);
         for (var i = 0; i < this.ships.length; ++i)
-            this.ships[i].render(this.ctx)
+            this.ships[i].render(ctx)
+        this.explosion.render(ctx);
     },
+
     update: function(t, dt) {
-        this.explosion.update(t, dt);
         for (var i = 0; i < this.ships.length; ++i)
             this.ships[i].update(t, dt)
+        this.explosion.update(t, dt);
     },
+
     worldWrap: function(x) {
         while (x[0] > Map.width)     { x[0] -= Map.width; }
         while (x[0] < 0)             { x[0] += Map.width; }
