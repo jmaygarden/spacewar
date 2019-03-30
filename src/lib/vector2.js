@@ -35,6 +35,12 @@ class Vector2 {
     this.data[1] = value;
   }
 
+  set(other) {
+    this.data = [ ...other.data ];
+
+    return this;
+  }
+
   add(other) {
     this.x += other.x;
     this.y += other.y;

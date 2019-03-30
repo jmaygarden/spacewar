@@ -1,3 +1,10 @@
+import Map from './map';
+import { Vector2 } from './lib';
+
+const SHIP_WIDTH = 10;
+const SHIP_HEIGHT = 15;
+const MAX_VELOCITY = 50;
+
 function Ship(state, color, keys) {
   this.state = state;
   this.color = color;
@@ -30,17 +37,16 @@ Ship.prototype = {
   },
 
   forces: function (state, t) {
-    let thrust = [0, 0]
-    let force = [0, 0]
-    let torque = 0;
-
     // linear thrust
-    V2.scale(state.direction, this.thrust, thrust);
-    if (Map.keystate[this.keys.thrust])
-      V2.add(force, thrust, force);
-    V2.add(force, Map.gravity(state), force);
+    const thrust = new Vector2(state.direction).scale(this.thrust);
+    let force = new Vector2();
+    if (Map.keystate[this.keys.thrust]) {
+      force.add(thrust);
+    }
+    force.add(Map.gravity(state));
 
     // angular torque and damping
+    let torque = 0;
     if (Map.keystate[this.keys.left])
       torque -= this.turn;
     else if (Map.keystate[this.keys.right])
@@ -58,9 +64,9 @@ Ship.prototype = {
     });
 
     //  cap a maximum velocity so things don't get out of hand
-    if (V2.length(this.state.velocity) > MAX_VELOCITY) {
-      V2.normalize(this.state.momentum, this.state.momentum);
-      V2.scale(this.state.momentum, this.state.mass * MAX_VELOCITY, this.state.momentum);
+    if (this.state.velocity.length > MAX_VELOCITY) {
+      this.state.momentum.normalize();
+      this.state.momentum.scale(this.state.mass * MAX_VELOCITY);
       this.state.recalculate();
     }
 
@@ -68,4 +74,5 @@ Ship.prototype = {
   },
 };
 
+export default Ship;
 
