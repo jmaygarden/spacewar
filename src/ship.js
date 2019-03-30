@@ -1,4 +1,3 @@
-import Map from './map';
 import { Vector2 } from './lib';
 
 const SHIP_WIDTH = 10;
@@ -13,9 +12,9 @@ function Ship(state, color, keys) {
 
 Ship.prototype = {
   geometry: [
-    [-1 * SHIP_HEIGHT/2, -1 * SHIP_WIDTH/2],
-    [-1 * SHIP_HEIGHT/2, SHIP_WIDTH/2],
-    [SHIP_HEIGHT/2, 0]
+    new Vector2(-1 * SHIP_HEIGHT/2, -1 * SHIP_WIDTH/2),
+    new Vector2(-1 * SHIP_HEIGHT/2, SHIP_WIDTH/2),
+    new Vector2(SHIP_HEIGHT/2, 0)
   ],
   m: 1,
   thrust: 5,
@@ -23,7 +22,7 @@ Ship.prototype = {
 
   render: function (ctx) {
     ctx.save();
-    ctx.translate(this.state.position[0], this.state.position[1]);
+    ctx.translate(this.state.position.x, this.state.position.y);
     ctx.rotate(this.state.orientation);
     ctx.drawPolygon(this.geometry);
     ctx.shadowBlur = 8;

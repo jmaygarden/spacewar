@@ -1,7 +1,8 @@
 import Vector2 from './vector2';
 
 function intialize(state, t, forces) {
-  var tmp = forces(state, t);
+  const tmp = forces(state, t);
+
   return {
     velocity: state.velocity,
     angularVelocity: state.angularVelocity,

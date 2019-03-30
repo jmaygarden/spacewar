@@ -6,6 +6,8 @@ setInterval((function() {
   var next = (new Date).getTime();
   var dt = TIMESTEP / 1000, max = 10;
 
+  window.Map = Map;
+
   Map.init(document.getElementById('canvas'));
 
   function update() {

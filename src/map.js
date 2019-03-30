@@ -20,10 +20,10 @@ const Map = {
   width: 0,
   height: 0,
   ships: null,
-  gravityCenter: [0, 0],
+  gravityCenter: new Vector2(),
   gravitySlope: 1,
   gravityIntercept: 1,
-  planetOffset: [0, 0],
+  planetOffset: new Vector2(),
   init: function(canvas) {
     var map = this, state = null, distance = 160, ndistance;
 
@@ -92,7 +92,7 @@ const Map = {
     let a;
 
     if (PLANET_RADIUS > d) {
-      return [0, 0];
+      return new Vector2();
     }
     d = this.gravitySlope * d + this.gravityIntercept;
     a = GRAVITY_INTENSITY / (d * d);
