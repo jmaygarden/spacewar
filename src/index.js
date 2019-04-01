@@ -1,35 +1,40 @@
 import Map from './map';
 
 const TIMESTEP = 33;
+const DT = TIMESTEP / 1000;
+const MAX_ITERATIONS = 10;
 
-setInterval((function() {
-  var next = (new Date).getTime();
-  var dt = TIMESTEP / 1000, max = 10;
+class Game {
+  constructor() {
+    Map.init(document.getElementById('canvas'));
+    Map.render();
+    window.Map = Map;
 
-  window.Map = Map;
-
-  Map.init(document.getElementById('canvas'));
-
-  function update() {
-    Map.update((new Date).getTime() / 1000.0, dt)
+    this.timestamp = 0;
+    this.requestId = requestAnimationFrame((timestamp) => {
+      this.timestamp = timestamp;
+      this.requestId = requestAnimationFrame(
+        (timestamp) => this.update(timestamp)
+      );
+    });
   }
 
-  function render() {
-    Map.render()
-  }
+  update(timestamp) {
+    let delta = timestamp - this.timestamp;
 
-  render();
-
-  return function() {
-    var i = 0;
-
-    while ((new Date).getTime() > next && i < max) {
-      update();
-      next += TIMESTEP;
-      i++;
+    while (delta > TIMESTEP) {
+      Map.update(timestamp, DT);
+      delta -= TIMESTEP;
     }
 
-    if (0 < i)
-      render();
+    this.timestamp = timestamp - delta;
+
+    Map.render();
+
+    this.requestId = requestAnimationFrame(
+      (timestamp) => this.update(timestamp)
+    );
   }
-})(), 0);
+}
+
+const game = new Game();
